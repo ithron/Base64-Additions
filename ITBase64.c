@@ -17,27 +17,31 @@
 
 static const char ITBase64AdditionsEncodingTable[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
+// function declarations
 void encodeWord(const uint8_t *bytes, char *dest, const int lastWord);
 unsigned int decodeWord(const char *chars, uint8_t *dest);
 uint8_t charToByte(const char c);
 unsigned int whiteSpaceFreeStringCreate(char **dest, const char *str, unsigned int len);
 
+/*! \brief Base64 encodes the 3 given bytes into 4 characters.
+ *
+ *  \param[in] bytes A pointer to a memory location that contains at least 3 bytes.
+ *  \param[out] dest A pointer to a memory location that must have enaugh space to hold 4 bytes.
+ *                   The encoded characters are put there.
+ *  \param[in] lastWord A flag that indicates if the function is about to decode the last words
+ *                      of data. So it fills it up with zeros it the flag is set.
+ */
 inline void encodeWord(const uint8_t *bytes, char *dest, const int lastWord) {
 	
+	// convert bytes to characters by using the encoding table
 	dest[0] = ITBase64AdditionsEncodingTable[(bytes[0] & 0xFC) >> 2];
 	dest[1] = ITBase64AdditionsEncodingTable[((bytes[0] & 0x03) << 4) | ((bytes[1] & 0xF0) >> 4)];
-	
-	if (dest[1] == 'A' && lastWord) {
-		
-		memset(&dest[1], '=', 3);
-		return;
-	}
-
 	dest[2] = ITBase64AdditionsEncodingTable[((bytes[1] & 0x0F) << 2) | ((bytes[2] & 0xC0) >> 6)];
 	
+	// replace 'zero' bytes with '='
 	if (dest[2] == 'A' && lastWord) {
 		
-		memset(&dest[1], '=', 2);
+		memset(&dest[2], '=', 2);
 		return;
 	}
 	
@@ -49,6 +53,9 @@ inline void encodeWord(const uint8_t *bytes, char *dest, const int lastWord) {
 	}
 }
 
+/*! \brief Converts the given base64 character to a (6 bit) byte
+ *         Returns 0xff on error.
+ */
 inline uint8_t charToByte(const char c) {
 	
 	if (c >= 'A' && c <= 'Z')
@@ -67,6 +74,9 @@ inline uint8_t charToByte(const char c) {
 		return 0xff;
 }
 
+/*! Decodes the given 4 base64 characters to less than or equal to 3 bytes of data.
+ *  The number of bytes encoded is retured. 0 on error.
+ */
 inline unsigned int decodeWord(const char *chars, uint8_t *dest) {
 	
 	const uint8_t c0 = charToByte(chars[0]);
@@ -77,25 +87,32 @@ inline unsigned int decodeWord(const char *chars, uint8_t *dest) {
 	
 	dest[0] = (c0 << 2) | ((c1 & 0x30) >> 4);
 	
-	if (chars[1] == '=')
+	if (chars[2] == '=')
 		return 1;
 	
 	const uint8_t c2 = charToByte(chars[2]);
-	const uint8_t c3 = charToByte(chars[3]);
 	
-	if (c2 == 0xff || c3 == 0xff)
+	if (c2 == 0xff)
 		return 0;
 	
 	dest[1] = ((c1 & 0x0f) << 4) | ((c2 & 0x3c) >> 2);
 	
-	if (chars[2] == '=')
+	if (chars[3] == '=')
 		return 2;
+	
+	const uint8_t c3 = charToByte(chars[3]);
+	
+	if (c3 == 0xff)
+		return 0;
 	
 	dest[2] = ((c2 & 0x03) << 6) | c3;
 	
 	return 3;
 }
 
+/*! Removes all whitespaces from the given string. Note that a new (newly allocated) string is returned,
+ *  so remember to free it when you used it.
+ */
 inline unsigned int whiteSpaceFreeStringCreate(char **dest, const char *str, unsigned int len) {
 	
 	unsigned int i = 0, resultLen = 0;
@@ -112,28 +129,26 @@ inline unsigned int whiteSpaceFreeStringCreate(char **dest, const char *str, uns
 	return resultLen;
 }
 
-char * ITBase64EncodedStringCreate(const void *data, const unsigned int len) {
+char * ITBase64EncodedStringCreate(const void *data, const unsigned int len, unsigned int *stringLength) {
 	
 	const unsigned int resultSizeWithoutLineBreaks = ((len / 3) + ((len % 3) != 0)) * 4;
 	const unsigned int numLineBreaks = resultSizeWithoutLineBreaks / 76;
 	const unsigned int resultSize = resultSizeWithoutLineBreaks + numLineBreaks;
 	const uint8_t *ptr = (uint8_t *)data;
-	const unsigned int effLen = (len / 3) * 3;
 	const unsigned int restLen = len % 3;
-	unsigned int srcIndex = 0, destIndex = 0, charCounter = 0;
+	const unsigned int effLen = len - restLen;
+	unsigned int srcIndex = 0, destIndex = 0;
 	
 	char *dest = (char *) malloc((resultSize + 1) * sizeof(char));
 	
 	while (srcIndex < effLen) {
-		
-		charCounter = (charCounter + 4) % 76;
 		
 		encodeWord(&ptr[srcIndex], &dest[destIndex], 0);
 		
 		srcIndex += 3;
 		destIndex += 4;
 		
-		if (charCounter == 0) {
+		if (destIndex % 76 == 0) {
 			
 			dest[destIndex] = '\n';
 			destIndex++;
@@ -152,6 +167,9 @@ char * ITBase64EncodedStringCreate(const void *data, const unsigned int len) {
 	}
 	
 	dest[resultSize] = '\0';
+	
+	if (stringLength != NULL)
+		*stringLength = resultSize;
 	
 	return dest;
 }
@@ -184,7 +202,7 @@ void * ITBase64DecodedDataCreate(const char *string, const unsigned int len, uns
 	
 	if (bytesDecoded > 0 && bytesDecoded < 3) {
 		
-		*dataLength = destIndex - (3 - bytesDecoded);
+		*dataLength = destIndex + bytesDecoded;
 		
 		dest = (uint8_t *) realloc(dest, *dataLength);
 	}
@@ -199,7 +217,6 @@ void * ITBase64DecodedDataCreate(const char *string, const unsigned int len, uns
 		
 		*dataLength = destIndex;
 	}
-
 	
 	free(characters);
 	

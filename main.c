@@ -5,7 +5,7 @@
 
 int main (int argc, const char * argv[]) {
 	
-	const char *str = "Hello, World!\nThis is my Base64 encoded text!\nHope you enjoy!?";
+	const char *str = "Hello, World!\nThis is my test message.\r\nAnd some more text to test my program.";
 	
 	char *encodedString = NULL;
 	
@@ -20,7 +20,7 @@ int main (int argc, const char * argv[]) {
 		decodedString = (char *) realloc(decodedString, len + 1);
 		decodedString[len] = '\0';
 		
-		printf("%s", decodedString);
+		printf("%s\n", decodedString);
 		
 		free(decodedString);
 	}

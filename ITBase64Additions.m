@@ -45,12 +45,14 @@
 	if ([self length] == 0)
 		return [NSString string];
 	
-	char *cString = ITBase64EncodedStringCreate([self bytes], [self length]);
+	unsigned int strLen = 0;
+	
+	char *cString = ITBase64EncodedStringCreate([self bytes], [self length], &strLen);
 	
 	if (cString == NULL)
 		return nil;
 	
-	NSString *encodedString = [[NSString alloc] initWithCStringNoCopy:cString length:[self length] freeWhenDone:YES];
+	NSString *encodedString = [[NSString alloc] initWithCStringNoCopy:cString length:strLen freeWhenDone:YES];
 	
 	if (!encodedString) {
 		free(cString);
