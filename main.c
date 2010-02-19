@@ -40,8 +40,9 @@ int main (int argc, const char * argv[]) {
 	const char *str = "Hello, World!\nThis is my test message.\r\nAnd some more text to test my program.";
 	
 	char *encodedString = NULL;
+	unsigned int strLen = 0;
 	
-	encodedString = ITBase64EncodedStringCreate(str, strlen(str));
+	encodedString = ITBase64EncodedStringCreate(str, strlen(str), &strLen);
 	
 	printf("%s\n", encodedString);
 	

@@ -39,7 +39,7 @@
 
 static const char ITBase64AdditionsEncodingTable[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-// function declarations
+/* function declarations */
 void encodeWord(const uint8_t *bytes, char *dest, const int lastWord);
 unsigned int decodeWord(const char *chars, uint8_t *dest);
 uint8_t charToByte(const char c);
