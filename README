@@ -1,0 +1,18 @@
+The Base64 additions consits of two parts
+	
+	1.	The Base64 encoder and decoder, written in plain 
+		C99 (ITBase64.h, ITBase64.c).
+		
+	2.	The NSData additions written in Objective-C, that uses functions 
+		from part 1 (ITBase64Additions.h, ITBase64Additions.m).
+	
+
+Usage:
+
+	If you only need the C99 encoder/decoder, include ITBase64.h in your 
+	source code and add ITBase64.h and ITBase64.c to your project.
+	A sample can be found in main.c
+	
+	To use the NSData additions, import ITBase64Additions.h in you source code
+	and add ITBase64Addition.h, ITBase64Addition.c, ITBase64.h and ITBase64.c
+	to your project.
