@@ -74,7 +74,10 @@
 	if (cString == NULL)
 		return nil;
 	
-	NSString *encodedString = [[NSString alloc] initWithCStringNoCopy:cString length:strLen freeWhenDone:YES];
+	NSString *encodedString = [[NSString alloc] initWithBytesNoCopy:cString 
+															   length:strLen 
+															 encoding:NSASCIIStringEncoding
+														 freeWhenDone:YES];
 	
 	if (!encodedString) {
 		free(cString);
